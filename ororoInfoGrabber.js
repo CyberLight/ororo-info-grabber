@@ -10,7 +10,7 @@ var isGrabShows,
 
 if (args.length == 1) {
     console.log("phantomjs ororoInfoGrabber.js [shows|movies] [link to show/movie page]");
-    phantom.exit();
+    phantom.exit(1);
 }
 
 isGrabMovies = (args[1] == 'movies');
@@ -22,17 +22,19 @@ function grabVideoInfoShows(url, cb) {
     page.open(url, function (status) {
         if (status !== 'success') {
             console.log('grabVideoInfoShows Unable to access network', url);
+            phantom.exit(1);
         } else {
             var videoInfo = page.evaluate(function () {
                 var videoTag = document.querySelector('video');
                 var sources = videoTag.querySelectorAll('source');
                 var tracks = videoTag.querySelectorAll('track');
+                var baseOroroUrl = 'http://ororo.tv';
 
                 var videoTagInfo = {
                     'season': videoTag.attributes['data-season'].value,
                     'show': videoTag.attributes['data-show'].value,
                     'title': videoTag.attributes['data-title'].value,
-                    'posterUrl': videoTag.attributes['poster'].value,
+                    'posterUrl': baseOroroUrl + videoTag.attributes['poster'].value,
                     'sourceUrls': [],
                     'trackUrls': []
                 };
@@ -48,7 +50,7 @@ function grabVideoInfoShows(url, cb) {
                     var src = track.attributes['src'].value;
                     var lang = track.attributes['label'].value;
 
-                    videoTagInfo.trackUrls.push({src: src, lang: lang});
+                    videoTagInfo.trackUrls.push({src: baseOroroUrl + src, lang: lang});
                 }
 
                 return videoTagInfo;
@@ -62,16 +64,18 @@ function grabVideoInfoMovies(url, cb) {
     page.open(url, function (status) {
         if (status !== 'success') {
             console.log('grabVideoInfoMovies Unable to access network', url);
+            phantom.exit(1);
         } else {
             var videoInfo = page.evaluate(function () {
                 var videoTag = document.querySelector('video');
                 var sources = videoTag.querySelectorAll('source');
                 var tracks = videoTag.querySelectorAll('track');
+                var baseOroroUrl = 'http://ororo.tv';
 
                 var videoTagInfo = {
                     'show': videoTag.attributes['data-show'].value,
                     'title': videoTag.attributes['data-title'].value,
-                    'posterUrl': videoTag.attributes['poster'].value,
+                    'posterUrl': baseOroroUrl + videoTag.attributes['poster'].value,
                     'sourceUrls': [],
                     'trackUrls': []
                 };
@@ -87,7 +91,7 @@ function grabVideoInfoMovies(url, cb) {
                     var src = track.attributes['src'].value;
                     var lang = track.attributes['label'].value;
 
-                    videoTagInfo.trackUrls.push({src: src, lang: lang});
+                    videoTagInfo.trackUrls.push({src: baseOroroUrl + src, lang: lang});
                 }
 
                 return videoTagInfo;
@@ -102,6 +106,7 @@ function grabShowsInfo(url, cb) {
     page.open(url, function (status) {
         if (status !== 'success') {
             console.log('grabShowsInfo: Unable to access network', url);
+            phantom.exit(1);
         } else {
             var result = page.evaluate(function () {
                 var tvShowItem = {};
