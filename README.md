@@ -15,6 +15,11 @@ phantomjs ororoInfoGrabber.js shows http://ororo.tv/en/shows/the-wire#1 > result
 phantomjs ororoInfoGrabber.js movies http://ororo.tv/en/movies/the-fifth-element > result_movie.json
 ```
 
+* Use authentication
+```bash
+phantomjs --cookies-file=cookies.txt ororoInfoGrabber.js auth USER_EMAIL USER_PASSWORD shows http://ororo.tv/en/shows/breaking-bad > breaking-bad.js
+```
+
 Downloader
 ==========
 * Requirements
@@ -29,9 +34,4 @@ npm install
 * Basic usage:
 ```bash
 node downloader.js result_shows.json path/to/store/downloaded/data
-```
-
-* Use authentication
-```bash
-phantomjs --cookies-file=cookies.txt ororoInfoGrabber.js auth USER_EMAIL USER_PASSWORD shows http://ororo.tv/en/shows/breaking-bad > breaking-bad.js
 ```
