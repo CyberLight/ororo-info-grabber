@@ -2,8 +2,8 @@
 var system = require('system');
 var args = system.args;
 var page = require('webpage').create();
-var url = 'http://ororo.tv/';
-
+var baseUrl = 'http://ororo.tv/';
+var authUrl = 'http://ororo.tv/en/users/sign_in';
 
 var isGrabShows,
     isGrabMovies;
@@ -13,10 +13,110 @@ if (args.length == 1) {
     phantom.exit(1);
 }
 
-isGrabMovies = (args[1] == 'movies');
-isGrabShows = (args[1] == 'shows');
-url = args[2];
+var auth = (args[1] == 'auth');
+var userEmail;
+var userPassword;
+var url;
 
+if(auth) {
+    userEmail = args[2];
+    userPassword = args[3];
+    isGrabMovies = (args[4] == 'movies');
+    isGrabShows = (args[4] == 'shows');
+    url = args[5];
+}else{
+    isGrabMovies = (args[1] == 'movies');
+    isGrabShows = (args[1] == 'shows');
+    url = args[2];
+}
+
+function evaluateSpecial(page, func) {
+    var args = [].slice.call(arguments, 2);
+    var fn = "function() { return (" + func.toString() + ").apply(this, " + JSON.stringify(args) + ");}";
+    return page.evaluate(fn);
+}
+
+function waitFor(testFx, onReady, timeOutMillis) {
+    var maxtimeOutMillis = timeOutMillis ? timeOutMillis : 3000, //< Default Max Timout is 3s
+        start = new Date().getTime(),
+        condition = false,
+        interval = setInterval(function() {
+            if ( (new Date().getTime() - start < maxtimeOutMillis) && !condition ) {
+                // If not time-out yet and condition not yet fulfilled
+                condition = (typeof(testFx) === "string" ? eval(testFx) : testFx()); //< defensive code
+            } else {
+                if(!condition) {
+                    // If condition still not fulfilled (timeout but condition is 'false')
+                    console.log("'waitFor()' timeout");
+                    phantom.exit(1);
+                } else {
+                    // Condition fulfilled (timeout and/or condition is 'true')
+                    //console.log("'waitFor()' finished in " + (new Date().getTime() - start) + "ms.");
+                    typeof(onReady) === "string" ? eval(onReady) : onReady(); //< Do what it's supposed to do once the condition is fulfilled
+                    clearInterval(interval); //< Stop this interval
+                }
+            }
+        }, 250); //< repeat check every 250ms
+};
+
+function authenticate(authUrl, email, password, cb) {
+    if(!auth) {
+        cb(true);
+        return;
+    }
+    page.open(baseUrl, function(){
+        var isAuthenticated = page.evaluate(function () {
+            var allHref = document.querySelectorAll('ul.nav.pull-right.auth_links > li > a');
+            return (allHref.length > 0 && allHref[0].innerText == 'My account');
+        });
+        if(isAuthenticated){
+            cb(true);
+        }else{
+            page.open(authUrl, function(){
+                var clicked = evaluateSpecial(page, function(email, password){
+                    if (!HTMLElement.prototype.click) {
+                        HTMLElement.prototype.click = function() {
+                            var ev = document.createEvent('MouseEvent');
+                            ev.initMouseEvent(
+                                'click',
+                                /*bubble*/true, /*cancelable*/true,
+                                window, null,
+                                0, 0, 0, 0, /*coordinates*/
+                                false, false, false, false, /*modifier keys*/
+                                0/*button=left*/, null
+                            );
+                            this.dispatchEvent(ev);
+                        };
+                    }
+
+                    var inputUserEmail = document.querySelector('input#user_email');
+                    var inputUserPassword = document.querySelector('input#user_password');
+
+                    inputUserEmail.value = email;
+                    inputUserPassword.value = password;
+
+                    var submitBtn = document.querySelector('input.submit.button');
+                    if(submitBtn && submitBtn.value == 'Log in') {
+                        submitBtn.click();
+                        return true;
+                    }
+                    return false;
+                }, email, password);
+                if(clicked) {
+                    waitFor(function () {
+                        return page.evaluate(function () {
+                            var allHref = document.querySelectorAll('ul.nav.pull-right.auth_links > li > a');
+                            return (allHref.length > 0 && allHref[0].innerText == 'My account');
+                        });
+                    }, function () {
+                        cb(true);
+                    }, 10000);
+                }
+            });
+        }
+    });
+
+}
 
 function grabVideoInfoShows(url, cb) {
     page.open(url, function (status) {
@@ -136,36 +236,37 @@ function grabShowsInfo(url, cb) {
     });
 }
 
-
-grabShowsInfo(url, function (tvShow) {
-    if (tvShow) {
-        var countOfEpisodes = tvShow.episodeUrls.length;
-        var videoData = [];
-        var beginIndex = 0;
-        if(isGrabShows) {
-            grabVideoInfoShows(tvShow.episodeUrls[beginIndex], function resultShowsReceiver(result) {
-                videoData.push(result);
-                if (beginIndex >= countOfEpisodes - 1) {
-                    tvShow.videoInfos = videoData;
-                    console.log(JSON.stringify(tvShow, undefined, 4));
-                    phantom.exit();
-                } else {
-                    grabVideoInfoShows(tvShow.episodeUrls[beginIndex++], resultShowsReceiver);
-                }
-            });
-        }else{
-            grabVideoInfoMovies(tvShow.episodeUrls[beginIndex], function resultMoviesReceiver(result) {
-                videoData.push(result);
-                if (beginIndex >= countOfEpisodes - 1) {
-                    tvShow.videoInfos = videoData;
-                    console.log(JSON.stringify(tvShow, undefined, 4));
-                    phantom.exit();
-                } else {
-                    grabVideoInfoMovies(tvShow.episodeUrls[beginIndex++], resultMoviesReceiver);
-                }
-            });
+authenticate(authUrl, userEmail, userPassword, function(authenticated) {
+    grabShowsInfo(url, function (tvShow) {
+        if (tvShow) {
+            var countOfEpisodes = tvShow.episodeUrls.length;
+            var videoData = [];
+            var beginIndex = 0;
+            if (isGrabShows) {
+                grabVideoInfoShows(tvShow.episodeUrls[beginIndex], function resultShowsReceiver(result) {
+                    videoData.push(result);
+                    if (beginIndex >= countOfEpisodes - 1) {
+                        tvShow.videoInfos = videoData;
+                        console.log(JSON.stringify(tvShow, undefined, 4));
+                        phantom.exit();
+                    } else {
+                        grabVideoInfoShows(tvShow.episodeUrls[beginIndex++], resultShowsReceiver);
+                    }
+                });
+            } else {
+                grabVideoInfoMovies(tvShow.episodeUrls[beginIndex], function resultMoviesReceiver(result) {
+                    videoData.push(result);
+                    if (beginIndex >= countOfEpisodes - 1) {
+                        tvShow.videoInfos = videoData;
+                        console.log(JSON.stringify(tvShow, undefined, 4));
+                        phantom.exit();
+                    } else {
+                        grabVideoInfoMovies(tvShow.episodeUrls[beginIndex++], resultMoviesReceiver);
+                    }
+                });
+            }
         }
-    }
+    });
 });
 
 

@@ -30,3 +30,8 @@ npm install
 ```bash
 node downloader.js result_shows.json path/to/store/downloaded/data
 ```
+
+* Use authentication
+```bash
+phantomjs --cookies-file=cookies.txt ororoInfoGrabber.js auth USER_EMAIL USER_PASSWORD shows http://ororo.tv/en/shows/breaking-bad > breaking-bad.js
+```
