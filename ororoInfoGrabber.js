@@ -250,7 +250,7 @@ authenticate(authUrl, userEmail, userPassword, function(authenticated) {
                         console.log(JSON.stringify(tvShow, undefined, 4));
                         phantom.exit();
                     } else {
-                        grabVideoInfoShows(tvShow.episodeUrls[beginIndex++], resultShowsReceiver);
+                        grabVideoInfoShows(tvShow.episodeUrls[++beginIndex], resultShowsReceiver);
                     }
                 });
             } else {
@@ -261,7 +261,7 @@ authenticate(authUrl, userEmail, userPassword, function(authenticated) {
                         console.log(JSON.stringify(tvShow, undefined, 4));
                         phantom.exit();
                     } else {
-                        grabVideoInfoMovies(tvShow.episodeUrls[beginIndex++], resultMoviesReceiver);
+                        grabVideoInfoMovies(tvShow.episodeUrls[++beginIndex], resultMoviesReceiver);
                     }
                 });
             }
