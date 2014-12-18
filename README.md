@@ -35,3 +35,14 @@ npm install
 ```bash
 node downloader.js result_shows.json path/to/store/downloaded/data
 ```
+* With posting data to api method
+
+```bash
+node downloader.js result_shows.json media/video post-data http://localhost:8000 8304
+```
+  * Parameters:
+    * ```result_shows.json``` - json file with links
+    * ```media/video``` - path to folder
+    * ``` post-data ``` - special flag for activation post data to API method action
+    * ``` http://localhost:8000 ``` - api protocol and host
+    * ``` 8304 ``` - id of series inside api database
