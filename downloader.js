@@ -192,7 +192,15 @@ function postData(host, seriesId, seasonNumber, formData, cb){
         },
         function (error, response, body) {
             if (!error && response.statusCode == 200) {
-                cb(null, true);
+                var jsonResponse = JSON.parse(body),
+                    err = null;
+                if(jsonResponse.status != 'created'){
+                    err = new Error('Serial with seriesId: ' + seriesId +
+                        ' seasonNumber: ' + seasonNumber +
+                        ' episodeNumber: ' + formData.number +
+                        ' does not created or already exists!')
+                }
+                cb(err, true);
             } else {
                 if(error) {
                     cb(error, false);
