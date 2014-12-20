@@ -148,7 +148,7 @@ function downloadVideos(videos, threads, cb) {
                                      headers,
 
                 function(err, data){
-                    if(canPostData && !err) {
+                    if(canPostData && !err && url.needPostToApi) {
 
                         var formData = {
                             title: url.title,
@@ -230,6 +230,7 @@ fs.readFile(jsonDataFile, 'utf8', function (err, data) {
                 filePath: '/'+seriesId+'/'+seasonNumber,
                 fileName: episodeNumber+'.'+fileExtension,
                 description: downloadData.description,
+                needPostToApi: (j==0),
                 src: sourceUrl.src
             });
         }
