@@ -1,4 +1,5 @@
 // Function to download file using wget
+var colors = require('colors');
 var fs = require('fs');
 var async = require('async');
 var url = require('url');
@@ -8,6 +9,27 @@ var request = require('request');
 var EventEmitter = require('events').EventEmitter;
 var mkdirp = require('mkdirp');
 var USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36';
+var warningStack = [];
+
+function EpisodeAlreadyExistsError(seriesId, seasonNumber, episodeNumber){
+    this.message = 'Serial with seriesId: ' + seriesId +
+    ' seasonNumber: ' + seasonNumber +
+    ' episodeNumber: ' + episodeNumber +
+    ' does not created or already exists!'
+}
+
+function FileExistsError(filePath){
+    this.message = 'File ' + filePath + ' already exists!';
+}
+
+EpisodeAlreadyExistsError.prototype = new Error();
+EpisodeAlreadyExistsError.prototype.coloredMessage = function(){
+    return this.message.magenta;
+};
+FileExistsError.prototype = new Error();
+FileExistsError.prototype.coloredMessage = function(){
+    return this.message.yellow;
+};
 
 if(process.argv.length == 2){
     console.log("Need specify file name with urls");
@@ -23,6 +45,31 @@ var seriesId = process.argv[6];
 console.reset = function () {
     return process.stdout.write('\033c');
 };
+
+process.stdin.resume();//so the program will not close instantly
+
+function exitHandler(options, err) {
+    if (options.cleanup) {
+        console.log('clean');
+    }
+    if (err) {
+        printWarningStack();
+        console.log(err.stack);
+    }
+    if (options.exit) {
+        printWarningStack();
+        process.exit();
+    }
+}
+
+//do something when app is closing
+process.on('exit', exitHandler.bind(null,{cleanup:true}));
+
+//catches ctrl+c event
+process.on('SIGINT', exitHandler.bind(null, {exit:true}));
+
+//catches uncaught exceptions
+process.on('uncaughtException', exitHandler.bind(null, {exit:true}));
 
 function downloadFile(src, output, headers) {
     var downloader = new EventEmitter(),
@@ -84,6 +131,12 @@ function downloadFile(src, output, headers) {
 function download_using_node_wget(fileUrl, fileName, outputdir, headers, cb) {
     fileName = fileName || url.parse(fileUrl).pathname.split('/').pop();
     var filePathWithName = outputdir + '/' + fileName;
+
+    if(fs.existsSync(filePathWithName)){
+        cb(new FileExistsError(filePathWithName), false);
+        return;
+    }
+
     var download = downloadFile(fileUrl, filePathWithName, headers);
     download.on('error', function (err) {
         cb(err, null);
@@ -114,7 +167,15 @@ function downloadSubtitles(subtitles, threads, cb) {
             download_using_node_wget(url.src,
                                      null,
                                      fullPathToSaveFiles, {'User-Agent': USER_AGENT},
-                                     next);
+                                     function(err, data){
+                                         if(err instanceof FileExistsError) {
+                                             console.log('Skipped downloading! File already exists!');
+                                             warningStack.push(err);
+                                             next(null, data);
+                                         }else{
+                                             next(err, data);
+                                         }
+                                     });
         });
     }, function (err) {
         if (err) {
@@ -148,6 +209,12 @@ function downloadVideos(videos, threads, cb) {
                                      headers,
 
                 function(err, data){
+
+                    if(err instanceof FileExistsError) {
+                        warningStack.push(err);
+                        err = null;
+                    }
+
                     if(canPostData && !err && url.needPostToApi) {
 
                         var formData = {
@@ -192,15 +259,13 @@ function postData(host, seriesId, seasonNumber, formData, cb){
         },
         function (error, response, body) {
             if (!error && response.statusCode == 200) {
-                var jsonResponse = JSON.parse(body),
-                    err = null;
+                var jsonResponse = JSON.parse(body);
+
                 if(jsonResponse.status != 'created'){
-                    err = new Error('Serial with seriesId: ' + seriesId +
-                        ' seasonNumber: ' + seasonNumber +
-                        ' episodeNumber: ' + formData.number +
-                        ' does not created or already exists!')
+                    warningStack.push(new EpisodeAlreadyExistsError(seriesId, seasonNumber, formData.number));
                 }
-                cb(err, true);
+
+                cb(null, true);
             } else {
                 if(error) {
                     cb(error, false);
@@ -210,6 +275,18 @@ function postData(host, seriesId, seasonNumber, formData, cb){
             }
         }
     );
+}
+
+function printWarningStack() {
+    if (warningStack.length) {
+        console.log('\n');
+        console.log('-=-=-=-=-=-=-=-=-=-=-= R E P O R T -=-=-=-=-=-=-=-=-=-=-=-=-=-=-'.bgWhite.bold.black);
+        console.log('With following warnings:'.red);
+        for(var i = 0, len = warningStack.length; i < len; i++){
+            console.log(warningStack[i].coloredMessage());
+        }
+        console.log('-=-=-=-=-=-=-=-=-=-= E N D   O F   R E P O R T -=-=-=-=-=-=-=-=-=-=-'.bgWhite.bold.black);
+    }
 }
 
 fs.readFile(jsonDataFile, 'utf8', function (err, data) {
@@ -265,8 +342,11 @@ fs.readFile(jsonDataFile, 'utf8', function (err, data) {
             if(success) {
                 console.log('Videos downloaded successfully!');
             }else{
-                console.error('Videos downloading failed');
+                console.error('Videos downloading failed'.red, err);
             }
+
+            printWarningStack();
+            process.exit();
         });
     });
 
