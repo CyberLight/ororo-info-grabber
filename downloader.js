@@ -303,16 +303,19 @@ fs.readFile(jsonDataFile, 'utf8', function (err, data) {
         var seasonNumber = parsedTitle && parsedTitle[1] || 1;
         var episodeNumber = parsedTitle && parsedTitle[2] || 1;
 
+        var seriesIdWithSeasonNumberPath = ('/' + seriesId + '/' + seasonNumber);
+        var onlySeasonNumberPath = ('/' + seasonNumber);
+        var computedFilePath = seriesId ? seriesIdWithSeasonNumberPath : onlySeasonNumberPath;
         for(var j=0, jlen=videoInfo.sourceUrls.length; j<jlen; j++) {
             var sourceUrl = videoInfo.sourceUrls[j];
-            var fileExtension = sourceUrl.src.split('.').pop();
+            var fileExtension = url.parse(sourceUrl.src).pathname.split('.').pop();
 
             videos.push({
                 title: title,
                 seriesId: seriesId,
                 seasonNumber: seasonNumber,
                 episodeNumber: episodeNumber,
-                filePath: '/'+seriesId+'/'+seasonNumber,
+                filePath: computedFilePath,
                 fileName: episodeNumber+'.'+fileExtension,
                 description: downloadData.description,
                 needPostToApi: (j==0),
@@ -321,7 +324,7 @@ fs.readFile(jsonDataFile, 'utf8', function (err, data) {
         }
         for(var k=0, klen=videoInfo.trackUrls.length; k<klen; k++) {
             subtitles.push({
-                filePath: '/'+seriesId+'/'+seasonNumber,
+                filePath: computedFilePath,
                 src: videoInfo.trackUrls[k].src
             });
         }
