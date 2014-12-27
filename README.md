@@ -46,3 +46,25 @@ node downloader.js result_shows.json media/video post-data http://localhost:8000
     * ``` post-data ``` - special flag for activation post data to API method action
     * ``` http://localhost:8000 ``` - api protocol and host
     * ``` 8304 ``` - id of series inside api database
+
+Video thumbnail maker
+=====================
+
+* Requirements:
+  * Install ```ffmpeg```
+    * Use instructions for different OS ```https://github.com/fluent-ffmpeg/node-fluent-ffmpeg#prerequisites```
+  * Install new package ```fluent-ffmpeg``` (this library added to ```package.json```)
+    * Use command ```npm install```
+
+* Basic usage:
+```bash
+node thumbsMaker.js path/to/root/folder/with/videos path/to/folder/for/saving/thumbs
+```
+* Example
+```bash
+node thumbsMaker.js media/video media/preview
+```
+
+* Additional information:
+  * If you don't set second parameter with path to folder for saving thumbnails,
+    then thumbnails will be saved inside the video file folder (near the video file)
