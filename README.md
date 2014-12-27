@@ -52,7 +52,10 @@ Video thumbnail maker
 
 * Requirements:
   * Install ```ffmpeg```
-    * Use instructions for different OS ```https://github.com/fluent-ffmpeg/node-fluent-ffmpeg#prerequisites```
+    * Use instructions for different OS
+    ```
+    https://github.com/fluent-ffmpeg/node-fluent-ffmpeg#prerequisites
+    ```
   * Install new package ```fluent-ffmpeg``` (this library added to ```package.json```)
     * Use command ```npm install```
 
