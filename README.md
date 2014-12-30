@@ -71,3 +71,9 @@ node thumbsMaker.js media/video media/preview
 * Additional information:
   * If you don't set second parameter with path to folder for saving thumbnails,
     then thumbnails will be saved inside the video file folder (near the video file)
+
+Srt subtitles parser
+=====================
+
+* Usage
+    * ```node srtParser.js media/video```
