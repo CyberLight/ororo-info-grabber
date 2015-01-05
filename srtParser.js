@@ -46,7 +46,12 @@ function SrtParser(){
         strData.shift();
 
         var timeNormalize = function(strTime){
-            return parseFloat(String(strTime.trim()).replace(/:/g,'').replace(/,/g, '.'))
+            var regex = /(\d+):(\d{2}):(\d{1,})[,.](\d{2,})/;
+            var parts = regex.exec(strTime);
+
+            return parseFloat(parseInt(parts[1], 10) * 3600 +
+                              parseInt(parts[2], 10) * 60 +
+                              parseInt(parts[3], 10) + "." + parseInt(parts[4], 10)); //String(strTime.trim()).replace(/:/g,'').replace(/,/g, '.')
         };
 
         var items = [];
