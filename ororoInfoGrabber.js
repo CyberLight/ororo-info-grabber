@@ -4,30 +4,11 @@ var args = system.args;
 var page = require('webpage').create();
 var baseUrl = 'http://ororo.tv/';
 var authUrl = 'http://ororo.tv/en/users/sign_in';
-
-var isGrabShows,
-    isGrabMovies;
+var fs = require('fs');
 
 if (args.length == 1) {
-    console.log("phantomjs ororoInfoGrabber.js [shows|movies] [link to show/movie page]");
+    console.log("phantomjs ororoInfoGrabber.js list.json");
     phantom.exit(1);
-}
-
-var auth = (args[1] == 'auth');
-var userEmail;
-var userPassword;
-var url;
-
-if(auth) {
-    userEmail = args[2];
-    userPassword = args[3];
-    isGrabMovies = (args[4] == 'movies');
-    isGrabShows = (args[4] == 'shows');
-    url = args[5];
-}else{
-    isGrabMovies = (args[1] == 'movies');
-    isGrabShows = (args[1] == 'shows');
-    url = args[2];
 }
 
 function evaluateSpecial(page, func) {
@@ -59,8 +40,8 @@ function waitFor(testFx, onReady, timeOutMillis) {
         }, 250); //< repeat check every 250ms
 };
 
-function authenticate(authUrl, email, password, cb) {
-    if(!auth) {
+function authenticate(needAuth, authUrl, email, password, cb) {
+    if(!needAuth) {
         cb(true);
         return;
     }
@@ -236,38 +217,80 @@ function grabShowsInfo(url, cb) {
     });
 }
 
-authenticate(authUrl, userEmail, userPassword, function(authenticated) {
-    grabShowsInfo(url, function (tvShow) {
-        if (tvShow) {
-            var countOfEpisodes = tvShow.episodeUrls.length;
-            var videoData = [];
-            var beginIndex = 0;
-            if (isGrabShows) {
-                grabVideoInfoShows(tvShow.episodeUrls[beginIndex], function resultShowsReceiver(result) {
-                    videoData.push(result);
-                    if (beginIndex >= countOfEpisodes - 1) {
-                        tvShow.videoInfos = videoData;
-                        console.log(JSON.stringify(tvShow, undefined, 4));
-                        phantom.exit();
-                    } else {
-                        grabVideoInfoShows(tvShow.episodeUrls[++beginIndex], resultShowsReceiver);
-                    }
-                });
-            } else {
-                grabVideoInfoMovies(tvShow.episodeUrls[beginIndex], function resultMoviesReceiver(result) {
-                    videoData.push(result);
-                    if (beginIndex >= countOfEpisodes - 1) {
-                        tvShow.videoInfos = videoData;
-                        console.log(JSON.stringify(tvShow, undefined, 4));
-                        phantom.exit();
-                    } else {
-                        grabVideoInfoMovies(tvShow.episodeUrls[++beginIndex], resultMoviesReceiver);
-                    }
-                });
+
+function grabData(row, authData, cb) {
+
+    var userEmail = authData.email;
+    var userPassword = authData.password;
+    var url = row.url;
+    var isGrabMovies = row.type == 'movie';
+    var isGrabShows = row.type == 'shows';
+    var pathToSave = row.saveAs;
+
+    authenticate(row.needAuth, authUrl, userEmail, userPassword, function () {
+        grabShowsInfo(url, function (tvShow) {
+            if (tvShow) {
+                var countOfEpisodes = tvShow.episodeUrls.length;
+                var videoData = [];
+                var beginIndex = 0;
+                if (isGrabShows) {
+                    grabVideoInfoShows(tvShow.episodeUrls[beginIndex], function resultShowsReceiver(result) {
+                        videoData.push(result);
+                        if (beginIndex >= countOfEpisodes - 1) {
+                            tvShow.videoInfos = videoData;
+                            var content =  JSON.stringify(tvShow, undefined, 4);
+                            fs.write(pathToSave, content, 'w');
+                            cb(pathToSave);
+                        } else {
+                            grabVideoInfoShows(tvShow.episodeUrls[++beginIndex], resultShowsReceiver);
+                        }
+                    });
+                } else {
+                    grabVideoInfoMovies(tvShow.episodeUrls[beginIndex], function resultMoviesReceiver(result) {
+                        videoData.push(result);
+                        if (beginIndex >= countOfEpisodes - 1) {
+                            tvShow.videoInfos = videoData;
+                            var content = JSON.stringify(tvShow, undefined, 4);
+                            fs.write(pathToSave, content, 'w');
+                            cb(pathToSave);
+                        } else {
+                            grabVideoInfoMovies(tvShow.episodeUrls[++beginIndex], resultMoviesReceiver);
+                        }
+                    });
+                }
             }
-        }
+        });
     });
-});
+}
 
 
+function loadListForAnalyzing(pathToFile){
+
+    var fileContent = fs.read(pathToFile);
+    var jsonData = JSON.parse(fileContent);
+    var authData = jsonData.authData;
+
+    var outData = {
+        links: []
+    };
+
+    function processRow(links, index){
+        console.log('INDEX: ', index, 'Links length: ', links.length);
+        var row = links[index];
+        console.log('Process: ', JSON.stringify(row));
+        grabData(row, authData, function(){
+            outData.links.push({"file": row.saveAs, type: row.type});
+            if(index < links.length-1) {
+                processRow(links, ++index);
+            }else{
+                fs.write('list_' + new Date().getTime()+".json", JSON.stringify(outData, undefined, 4), 'w');
+                phantom.exit(0);
+            }
+        });
+    }
+
+    processRow(jsonData.links, 0);
+}
+
+loadListForAnalyzing(args[1]);
 

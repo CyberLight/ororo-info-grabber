@@ -1,0 +1,29 @@
+{
+  "authData": {
+    "email":"XXXXX",
+    "password":"XXXXXX"
+  },
+  "links" : [
+    { "url": "http://ororo.tv/en/shows/pride-and-prejudice",
+      "type": "shows",
+      "needAuth" : true,
+      "saveAs": "examples/pride-and-prejudice.json" },
+
+    { "url": "http://ororo.tv/en/shows/firefly",
+      "type": "shows",
+      "needAuth" : true,
+      "saveAs": "examples/firefly.json"},
+
+    { "url": "http://ororo.tv/en/shows/rick-and-morty",
+      "type": "shows",
+      "needAuth" : true,
+      "saveAs": "examples/rick-and-morty.json"
+    },
+
+    { "url": "http://ororo.tv/en/movies/ice-age",
+      "type": "movie",
+      "needAuth" : true,
+      "saveAs": "examples/ice-age.json"
+    }
+  ]
+}

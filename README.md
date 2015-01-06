@@ -5,6 +5,32 @@ Phantomjs >= 1.9.8
 Usage
 =====
 
+
+* Now all urls and auth information stored to json file and this file used for grabbing information and generating list
+
+* **With Auth**:
+ * Before usage please replace XXXX with actual password and email inside ```examples/exampleList.json```
+```bash
+phantomjs --cookies-file=cookies.txt ororoInfoGrabber.js examples/exampleList.json
+```
+  * Output: json files with grabbed information and list_1420521341104.json with list of generated files
+      * 1420521341104 - this is timestamp
+  * If for any link inside json list value of key```needAuth``` equal to ```true```
+    then use
+    ```bash
+    phantomjs --cookies-file=cookies.txt
+    ``` parameters
+
+
+* **Without Auth**
+```bash
+phantomjs ororoInfoGrabber.js examples/exampleList.json
+```
+* Note: ```needAuth``` can be ```false``` for all links in json list
+
+
+**Obsolete usage of grabber**
+
 * For grabbing information about shows
 ```bash
 phantomjs ororoInfoGrabber.js shows http://ororo.tv/en/shows/the-wire#1 > result_shows.json
