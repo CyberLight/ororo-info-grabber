@@ -21,7 +21,7 @@ function EpisodeAlreadyExistsError(seriesId, seasonNumber, episodeNumber){
 
 function SeriesAlreadyExistsError(seriesId){
     this.message = 'Serial with seriesId: ' + seriesId +
-                   'already exists!'
+                   ' already exists!'
 }
 
 function FileExistsError(filePath){
@@ -397,8 +397,8 @@ function processFile(videoType, jsonDataFilePath, postersRootDir, cb) {
         var countryInfo = /Countries:(.*)/g.exec('Countries: USA')[1].trim();
 
         var seriesInfo = {
-            original_title: firstVideoInfo.title,
-            title: firstVideoInfo.title,
+            original_title: firstVideoInfo.show,
+            title: firstVideoInfo.show,
             description: downloadData.description,
             year_start: releaseYear,
             poster: postersRootDir + '/' + path.basename(firstVideoInfo.posterUrl),
@@ -481,7 +481,7 @@ function processFile(videoType, jsonDataFilePath, postersRootDir, cb) {
 
         postSerialData(host, videoType, seriesInfo, function(err, seriesId){
             if(err){
-                warningStack.push(new SkippedSeriesError(jsonDataFilePath, err))
+                warningStack.push(new SkippedSeriesError(jsonDataFilePath, err));
                 cb(err, null);
             }else {
                 processDownloading(downloadData, seriesId, cb);
@@ -514,4 +514,5 @@ function readAndProcessList(pathToList, posterRootDir, cb){
 
 readAndProcessList(jsonListFile, pathToSavePosters, function(err, success){
     console.log("Finished ", success ? ' successfully!' : ' with errors!');
+    process.exit(0);
 });
