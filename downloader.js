@@ -401,7 +401,7 @@ function processFile(videoType, jsonDataFilePath, postersRootDir, cb) {
             title: firstVideoInfo.show,
             description: downloadData.description,
             year_start: releaseYear,
-            poster: postersRootDir + '/' + path.basename(firstVideoInfo.posterUrl),
+            poster: 'posters/' + path.basename(firstVideoInfo.posterUrl),
             original_language: 'en',
             country: countryInfo
         };
@@ -415,7 +415,7 @@ function processFile(videoType, jsonDataFilePath, postersRootDir, cb) {
             for (var i = 0, len = downloadData.videoInfos.length; i < len; i++) {
                 var videoInfo = downloadData.videoInfos[i];
                 var title = videoInfo.title;
-                var parsedTitle = /Season\s(.*)\sEpisode\s(.*)/.exec(title);
+                var parsedTitle = /Season\s(.*)\sEpisode\s(\d+)/.exec(title);
                 var seasonNumber = parsedTitle && parsedTitle[1] || 1;
                 var episodeNumber = parsedTitle && parsedTitle[2] || 1;
                 var seriesIdWithSeasonNumberPath = ('/' + seriesId + '/' + seasonNumber);
