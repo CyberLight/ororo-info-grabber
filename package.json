@@ -25,6 +25,7 @@
     "colors": "^1.0.3",
     "fluent-ffmpeg": "^2.0.0-rc3",
     "mkdirp": "^0.5.0",
+    "node-icu-charset-detector": "0.0.7",
     "request": "^2.51.0"
   }
 }

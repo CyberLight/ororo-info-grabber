@@ -1,6 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var colors = require('colors');
+var charsetDetector = require("node-icu-charset-detector");
 
 if(process.argv.length == 2){
     console.log("Need base folder for parsing srt files");
@@ -40,7 +41,14 @@ function mysql_real_escape_string (str) {
 
 function SrtParser(){
     var parse = function(data) {
-        var strData = String(data).replace(/\r/g, '');
+        var charset = charsetDetector.detectCharset(data).toString();
+        console.log('CHARSET: ', charset);
+        var strData = null;
+        try {
+            strData = data.toString(charset).replace(/\r/g, '');
+        }catch(e){
+            strData = data.toString().replace(/\r/g, '');
+        }
         var regex = /(\d+)\n(\d{2}:\d{2}:\d{1,}[,.]\d{2,}) --> (\d{2}:\d{2}:\d{1,}[,.]\d{2,})/g;
         strData = strData.split(regex);
         strData.shift();
@@ -150,6 +158,7 @@ function getInsertValuesForInsertSubtitle(lang, caption, start, stop){
                 var seasonEpisode = subtitles[season][episode];
                 for(var i = 0, len=seasonEpisode.tracks.length; i<len; i++){
                     var track = seasonEpisode.tracks[i];
+                    console.log('File path: ', track.filePath);
                     var srtContent = fs.readFileSync(track.filePath);
                     var jsonSrtLines = srtParser.fromSrt(srtContent);
                     var tracksSqlArr = [];
